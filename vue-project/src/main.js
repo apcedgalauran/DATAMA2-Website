@@ -1,6 +1,6 @@
 import { createApp } from "vue";
 import App from "./App.vue";
-import { supabase } from "./supabase"; // ✅ Import Supabase
+import { supabase } from "./supabaseClient"; // ✅ Import Supabase
 
 // Create Vue app instance
 const app = createApp(App);
