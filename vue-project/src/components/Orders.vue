@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from "vue";
-import { supabase } from "../supabase";
+import { supabase } from "../lib/supabaseClient";
 
 const orders = ref([]);
 
