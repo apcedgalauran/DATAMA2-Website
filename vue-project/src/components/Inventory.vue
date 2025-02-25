@@ -5,7 +5,7 @@ import { supabase } from "../supabase";
 const inventory = ref([]);
 
 const fetchInventory = async () => {
-  let { data, error } = await supabase.from("INVENTORY").select("*");
+  let { data, error } = await supabase.from("inventory").select("*");
   if (error) console.error(error);
   else inventory.value = data;
 };

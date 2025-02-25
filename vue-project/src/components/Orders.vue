@@ -5,7 +5,7 @@ import { supabase } from "../supabase";
 const orders = ref([]);
 
 const fetchOrders = async () => {
-  let { data, error } = await supabase.from("ORDERS").select("*");
+  let { data, error } = await supabase.from("orders").select("*");
   if (error) console.error(error);
   else orders.value = data;
 };
