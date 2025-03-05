@@ -10,13 +10,18 @@ const newSupplier = ref({
   phone_number: "",
   country: "",
   email: "",
+  contact_person: "",
+  address: "",
+  zip_code: "",
+  rating: null,
+  notes: "",
 });
 
 // Fetch suppliers from Supabase
 const fetchSuppliers = async () => {
   let { data, error } = await supabase
     .from("supplier")
-    .select("id, name, phone_number, country, email");
+    .select("id, name, phone_number, country, email, contact_person, address, zip_code, rating, notes");
 
   if (error) console.error(error);
   else suppliers.value = data;
@@ -34,8 +39,43 @@ const cancelEditing = () => {
   updatedSupplier.value = {};
 };
 
+// Validate input fields
+const validateSupplier = (supplier) => {
+  if (
+    !supplier.name ||
+    !supplier.phone_number ||
+    !supplier.country ||
+    !supplier.email ||
+    !supplier.contact_person ||
+    !supplier.address ||
+    !supplier.zip_code
+  ) {
+    alert("All fields except rating and notes must be filled.");
+    return false;
+  }
+
+  if (!/^\d+$/.test(supplier.phone_number)) {
+    alert("Phone number must contain only digits.");
+    return false;
+  }
+
+  if (supplier.rating !== null && supplier.rating < 0) {
+    alert("Rating cannot be negative.");
+    return false;
+  }
+
+  if (supplier.zip_code && supplier.zip_code < 0) {
+    alert("Zip Code cannot be negative.");
+    return false;
+  }
+
+  return true;
+};
+
 // Save updated supplier data
 const saveUpdate = async () => {
+  if (!validateSupplier(updatedSupplier.value)) return;
+
   const { id, ...fields } = updatedSupplier.value;
   const { error } = await supabase.from("supplier").update(fields).eq("id", id);
 
@@ -48,11 +88,13 @@ const saveUpdate = async () => {
 
 // Add a new supplier
 const addSupplier = async () => {
+  if (!validateSupplier(newSupplier.value)) return;
+
   const { error } = await supabase.from("supplier").insert([newSupplier.value]);
   if (error) console.error(error);
   else {
     fetchSuppliers();
-    newSupplier.value = { name: "", phone_number: "", country: "", email: "" };
+    newSupplier.value = { name: "", phone_number: "", country: "", email: "", contact_person: "", address: "", zip_code: "", rating: null, notes: "" };
   }
 };
 
@@ -67,146 +109,131 @@ onMounted(fetchSuppliers);
 </script>
 
 <template>
-  <div class="container">
-    <h2>🏢 Supplier Management</h2>
-
-    <!-- Suppliers Table -->
-    <table>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Name</th>
-          <th>Phone Number</th>
-          <th>Country</th>
-          <th>Email</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr v-for="supplier in suppliers" :key="supplier.id">
-          <td>{{ supplier.id }}</td>
-
-          <!-- Editable Fields -->
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.name" type="text" />
-          </td>
-          <td v-else>{{ supplier.name }}</td>
-
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.phone_number" type="text" />
-          </td>
-          <td v-else>{{ supplier.phone_number }}</td>
-
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.country" type="text" />
-          </td>
-          <td v-else>{{ supplier.country }}</td>
-
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.email" type="email" />
-          </td>
-          <td v-else>{{ supplier.email || "N/A" }}</td>
-
-          <!-- Action Buttons -->
-          <td>
-            <button v-if="editingSupplier === supplier.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingSupplier === supplier.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(supplier)">Edit</button>
-            <button class="delete-btn" @click="deleteSupplier(supplier.id)">Delete</button>
-          </td>
-        </tr>
-      </tbody>
-    </table>
+  <div>
+    <h2>Supplier Management</h2>
 
     <!-- Add New Supplier -->
-    <h3>Add New Supplier</h3>
-    <div class="add-form">
-      <input v-model="newSupplier.name" type="text" placeholder="Supplier Name" />
-      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" />
-      <input v-model="newSupplier.country" type="text" placeholder="Country" />
-      <input v-model="newSupplier.email" type="email" placeholder="Email" />
-      <button class="add-btn" @click="addSupplier">Add</button>
+    <div class="form-container">
+      <h3>Add Supplier</h3>
+      <input v-model="newSupplier.name" placeholder="Name" required />
+      <input v-model="newSupplier.phone_number" placeholder="Phone Number" />
+      <input v-model="newSupplier.country" placeholder="Country" />
+      <input v-model="newSupplier.email" placeholder="Email" type="email" />
+      <input v-model="newSupplier.contact_person" placeholder="Contact Person" />
+      <input v-model="newSupplier.address" placeholder="Address" />
+      <input v-model="newSupplier.zip_code" placeholder="Zip Code" type="number" />
+      <input v-model="newSupplier.rating" placeholder="Rating" type="number" />
+      <textarea v-model="newSupplier.notes" placeholder="Notes"></textarea>
+      <button @click="addSupplier">Add Supplier</button>
     </div>
+
+    <!-- Supplier List -->
+    <div v-if="suppliers.length">
+      <h3>Supplier List</h3>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Phone</th>
+            <th>Country</th>
+            <th>Email</th>
+            <th>Contact Person</th>
+            <th>Address</th>
+            <th>Zip Code</th>
+            <th>Rating</th>
+            <th>Notes</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="supplier in suppliers" :key="supplier.id">
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.name }}</td>
+            <td v-else><input v-model="updatedSupplier.name" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.phone_number }}</td>
+            <td v-else><input v-model="updatedSupplier.phone_number" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.country }}</td>
+            <td v-else><input v-model="updatedSupplier.country" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.email }}</td>
+            <td v-else><input v-model="updatedSupplier.email" type="email" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.contact_person }}</td>
+            <td v-else><input v-model="updatedSupplier.contact_person" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.address }}</td>
+            <td v-else><input v-model="updatedSupplier.address" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.zip_code }}</td>
+            <td v-else><input v-model="updatedSupplier.zip_code" type="number" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.rating }}</td>
+            <td v-else><input v-model="updatedSupplier.rating" type="number" /></td>
+
+            <td v-if="editingSupplier !== supplier.id">{{ supplier.notes }}</td>
+            <td v-else><textarea v-model="updatedSupplier.notes"></textarea></td>
+
+            <td>
+              <button v-if="editingSupplier !== supplier.id" @click="startEditing(supplier)">Edit</button>
+              <button v-else @click="saveUpdate">Save</button>
+              <button v-if="editingSupplier === supplier.id" @click="cancelEditing">Cancel</button>
+              <button @click="deleteSupplier(supplier.id)">Delete</button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p v-else>No suppliers available.</p>
   </div>
 </template>
 
 <style scoped>
-.container {
-  max-width: 900px;
-  margin: auto;
+h2 {
   text-align: center;
-  font-family: Arial, sans-serif;
 }
 
-h2 {
-  margin-bottom: 15px;
+.form-container {
+  display: flex;
+  flex-direction: column;
+  max-width: 400px;
+  margin: auto;
+}
+
+input,
+textarea {
+  margin: 5px 0;
+  padding: 8px;
+  width: 100%;
+}
+
+button {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
 }
 
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 20px;
 }
 
-th, td {
+th,
+td {
   border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+  padding: 8px;
+  text-align: left;
 }
 
 th {
-  background-color: #007bff;
-  color: white;
-}
-
-input {
-  padding: 5px;
-  width: 140px;
-  border: 1px solid #ccc;
-}
-
-button {
-  padding: 7px 12px;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
-}
-
-.edit-btn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.save-btn {
-  background-color: #5cb85c;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  color: white;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.add-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.add-form {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.add-form input {
-  padding: 5px;
-  border: 1px solid #ddd;
+  background-color: #f2f2f2;
 }
 </style>
