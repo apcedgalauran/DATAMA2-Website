@@ -3,40 +3,47 @@ import { ref, onMounted } from "vue";
 import { supabase } from "../lib/supabaseClient";
 
 const suppliers = ref([]);
-const editingSupplier = ref(null);
-const updatedSupplier = ref({});
-const newSupplier = ref({
+const editingItem = ref(null);
+const updatedItem = ref({});
+const newItem = ref({
   name: "",
-  phone_number: "",
+  contact: "",
+  address: "",
+  zip_code: "",
   country: "",
-  email: "",
+  rating: 0,
 });
 
-// Fetch suppliers from Supabase
 const fetchSuppliers = async () => {
-  let { data, error } = await supabase
-    .from("supplier")
-    .select("id, name, phone_number, country, email");
-
+  let { data, error } = await supabase.from("supplier").select("*");
   if (error) console.error(error);
   else suppliers.value = data;
 };
 
-// Enable editing mode
-const startEditing = (supplier) => {
-  editingSupplier.value = supplier.id;
-  updatedSupplier.value = { ...supplier };
+const validateNumber = (event, field) => {
+  if (event.target.value < 0) {
+    updatedItem.value[field] = 0;
+  }
 };
 
-// Cancel editing mode
+const validateNewNumber = (event, field) => {
+  if (event.target.value < 0) {
+    newItem.value[field] = 0;
+  }
+};
+
+const startEditing = (item) => {
+  editingItem.value = item.id;
+  updatedItem.value = { ...item };
+};
+
 const cancelEditing = () => {
-  editingSupplier.value = null;
-  updatedSupplier.value = {};
+  editingItem.value = null;
+  updatedItem.value = {};
 };
 
-// Save updated supplier data
 const saveUpdate = async () => {
-  const { id, ...fields } = updatedSupplier.value;
+  const { id, ...fields } = updatedItem.value;
   const { error } = await supabase.from("supplier").update(fields).eq("id", id);
 
   if (error) console.error(error);
@@ -46,18 +53,23 @@ const saveUpdate = async () => {
   }
 };
 
-// Add a new supplier
-const addSupplier = async () => {
-  const { error } = await supabase.from("supplier").insert([newSupplier.value]);
+const addItem = async () => {
+  const { error } = await supabase.from("supplier").insert([newItem.value]);
   if (error) console.error(error);
   else {
     fetchSuppliers();
-    newSupplier.value = { name: "", phone_number: "", country: "", email: "" };
+    newItem.value = {
+      name: "",
+      contact: "",
+      address: "",
+      zip_code: "",
+      country: "",
+      rating: 0,
+    };
   }
 };
 
-// Delete a supplier
-const deleteSupplier = async (id) => {
+const deleteItem = async (id) => {
   const { error } = await supabase.from("supplier").delete().eq("id", id);
   if (error) console.error(error);
   else fetchSuppliers();
@@ -70,62 +82,72 @@ onMounted(fetchSuppliers);
   <div class="container">
     <h2>🏢 Supplier Management</h2>
 
-    <!-- Suppliers Table -->
     <table>
       <thead>
         <tr>
           <th>ID</th>
           <th>Name</th>
-          <th>Phone Number</th>
+          <th>Contact</th>
+          <th>Address</th>
+          <th>Zip Code</th>
           <th>Country</th>
-          <th>Email</th>
+          <th>Rating</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="supplier in suppliers" :key="supplier.id">
-          <td>{{ supplier.id }}</td>
+        <tr v-for="item in suppliers" :key="item.id">
+          <td>{{ item.id }}</td>
 
-          <!-- Editable Fields -->
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.name" type="text" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.name" type="text" />
           </td>
-          <td v-else>{{ supplier.name }}</td>
+          <td v-else>{{ item.name }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.phone_number" type="text" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.contact" type="text" />
           </td>
-          <td v-else>{{ supplier.phone_number }}</td>
+          <td v-else>{{ item.contact }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.country" type="text" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.address" type="text" />
           </td>
-          <td v-else>{{ supplier.country }}</td>
+          <td v-else>{{ item.address || "N/A" }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.email" type="email" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.zip_code" type="text" />
           </td>
-          <td v-else>{{ supplier.email || "N/A" }}</td>
+          <td v-else>{{ item.zip_code || "N/A" }}</td>
 
-          <!-- Action Buttons -->
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.country" type="text" />
+          </td>
+          <td v-else>{{ item.country || "N/A" }}</td>
+
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.rating" type="number" min="0" max="5" @input="validateNumber($event, 'rating')" />
+          </td>
+          <td v-else>{{ item.rating }}/5</td>
+
           <td>
-            <button v-if="editingSupplier === supplier.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingSupplier === supplier.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(supplier)">Edit</button>
-            <button class="delete-btn" @click="deleteSupplier(supplier.id)">Delete</button>
+            <button v-if="editingItem === item.id" class="save-btn" @click="saveUpdate">Save</button>
+            <button v-if="editingItem === item.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
+            <button v-else class="edit-btn" @click="startEditing(item)">Edit</button>
+            <button class="delete-btn" @click="deleteItem(item.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Add New Supplier -->
     <h3>Add New Supplier</h3>
     <div class="add-form">
-      <input v-model="newSupplier.name" type="text" placeholder="Supplier Name" />
-      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" />
-      <input v-model="newSupplier.country" type="text" placeholder="Country" />
-      <input v-model="newSupplier.email" type="email" placeholder="Email" />
-      <button class="add-btn" @click="addSupplier">Add</button>
+      <input v-model="newItem.name" type="text" placeholder="Supplier Name" />
+      <input v-model="newItem.contact" type="text" placeholder="Contact" />
+      <input v-model="newItem.address" type="text" placeholder="Address" />
+      <input v-model="newItem.zip_code" type="text" placeholder="Zip Code" />
+      <input v-model="newItem.country" type="text" placeholder="Country" />
+      <input v-model="newItem.rating" type="number" min="0" max="5" placeholder="Rating (0-5)" @input="validateNewNumber($event, 'rating')" />
+      <button class="add-btn" @click="addItem">Add</button>
     </div>
   </div>
 </template>
