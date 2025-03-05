@@ -14,40 +14,35 @@ const newItem = ref({
   rating: 0,
 });
 
-// Fetch products
 const fetchProducts = async () => {
   let { data, error } = await supabase.from("product").select("*");
   if (error) console.error(error);
   else products.value = data;
 };
 
-// Validate numbers (prevent negative values)
+
 const validateNumber = (event, field) => {
   if (event.target.value < 0) {
     updatedItem.value[field] = 0;
   }
 };
 
-// Validate numbers for new products
 const validateNewNumber = (event, field) => {
   if (event.target.value < 0) {
     newItem.value[field] = 0;
   }
 };
 
-// Enable editing mode
 const startEditing = (item) => {
   editingItem.value = item.id;
   updatedItem.value = { ...item };
 };
 
-// Cancel editing mode
 const cancelEditing = () => {
   editingItem.value = null;
   updatedItem.value = {};
 };
 
-// Save updated product
 const saveUpdate = async () => {
   const { id, ...fields } = updatedItem.value;
   const { error } = await supabase.from("product").update(fields).eq("id", id);
@@ -59,7 +54,6 @@ const saveUpdate = async () => {
   }
 };
 
-// Add a new product
 const addItem = async () => {
   const { error } = await supabase.from("product").insert([newItem.value]);
   if (error) console.error(error);
@@ -76,7 +70,6 @@ const addItem = async () => {
   }
 };
 
-// Delete a product
 const deleteItem = async (id) => {
   const { error } = await supabase.from("product").delete().eq("id", id);
   if (error) console.error(error);
@@ -165,4 +158,78 @@ onMounted(fetchProducts);
   max-width: 900px;
   margin: auto;
   text-align: center;
-  font-famil
+  font-family: Arial, sans-serif;
+}
+
+h2 {
+  margin-bottom: 15px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 10px;
+}
+
+th, td {
+  border: 1px solid #ddd;
+  padding: 10px;
+  text-align: center;
+}
+
+th {
+  background-color: #007bff;
+  color: white;
+}
+
+input {
+  padding: 5px;
+  width: 140px;
+  border: 1px solid #ccc;
+}
+
+button {
+  padding: 7px 12px;
+  border: none;
+  cursor: pointer;
+  border-radius: 5px;
+  margin: 3px;
+}
+
+.edit-btn {
+  background-color: #f0ad4e;
+  color: white;
+}
+
+.save-btn {
+  background-color: #5cb85c;
+  color: white;
+}
+
+.cancel-btn {
+  background-color: #d9534f;
+  color: white;
+}
+
+.delete-btn {
+  background-color: #e74c3c;
+  color: white;
+}
+
+.add-btn {
+  background-color: #3498db;
+  color: white;
+}
+
+.add-form {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 15px;
+}
+
+.add-form input {
+  padding: 5px;
+  border: 1px solid #ddd;
+}
+</style>
