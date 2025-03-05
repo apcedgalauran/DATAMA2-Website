@@ -1,5 +1,6 @@
 <template>
   <div class="container">
+    <!-- Navigation Bar -->
     <nav class="navbar">
       <button @click="currentView = 'Inventory'">Inventory</button>
       <button @click="currentView = 'Orders'">Orders</button>
@@ -7,6 +8,7 @@
       <button @click="currentView = 'Suppliers'">Suppliers</button>
     </nav>
 
+    <!-- Main Content (Tables) -->
     <div class="content">
       <Inventory v-if="currentView === 'Inventory'" />
       <Orders v-if="currentView === 'Orders'" />
@@ -33,7 +35,7 @@ export default {
 </script>
 
 <style>
-/* Centering the entire content */
+/* Centering the content */
 .container {
   display: flex;
   flex-direction: column;
@@ -74,12 +76,8 @@ button:hover {
   color: white;
 }
 
-/* Content styling */
+/* Content styling (removing background from tables) */
 .content {
   width: 80%;
-  background: white;
-  padding: 20px;
-  border-radius: 10px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
 }
 </style>
