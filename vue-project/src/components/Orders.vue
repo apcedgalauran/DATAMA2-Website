@@ -3,83 +3,79 @@ import { ref, onMounted } from "vue";
 import { supabase } from "../lib/supabaseClient";
 
 const orders = ref([]);
-const editingOrder = ref(null);
-const updatedOrder = ref({});
-const newOrder = ref({
-  date: "",
-  total_amount: "",
-  status: "",
-  notes: "",
-  customer_id: "",
-  shipping_id: "",
-});
+const editingItem = ref(null);
+const updatedItem = ref({});
+const newItem = ref({ date: "", total_amount: 0, status: "Pending", notes: "", CUSTOMER_id: null, SHIPPING_id: null });
 
-// Fetch orders from Supabase
 const fetchOrders = async () => {
   let { data, error } = await supabase
     .from("orders")
-    .select("id, date, total_amount, status, notes, customer_id, shipping_id");
+    .select("id, date, total_amount, status, notes, CUSTOMER_id, SHIPPING_id");
 
   if (error) console.error(error);
   else orders.value = data;
 };
 
-// Enable editing mode
-const startEditing = (order) => {
-  editingOrder.value = order.id;
-  updatedOrder.value = { ...order };
+const startEditing = (item) => {
+  editingItem.value = item.id;
+  updatedItem.value = { ...item };
 };
 
-// Cancel editing mode
 const cancelEditing = () => {
-  editingOrder.value = null;
-  updatedOrder.value = {};
+  editingItem.value = null;
+  updatedItem.value = {};
 };
 
-// Save updated data
 const saveUpdate = async () => {
-  const { id, ...fields } = updatedOrder.value;
-  const { error } = await supabase.from("orders").update(fields).eq("id", id);
+  if (updatedItem.value.total_amount < 0) {
+    alert("Total amount cannot be negative.");
+    return;
+  }
 
-  if (error) console.error(error);
-  else {
+  const { id, date, total_amount, status, notes, CUSTOMER_id, SHIPPING_id } = updatedItem.value;
+  const { error } = await supabase
+    .from("orders")
+    .update({ date, total_amount, status, notes, CUSTOMER_id, SHIPPING_id })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating record:", error);
+  } else {
     fetchOrders();
     cancelEditing();
   }
 };
 
-// Add a new order
-const addOrder = async () => {
-  const { error } = await supabase.from("orders").insert([newOrder.value]);
-  if (error) console.error(error);
-  else {
+const addItem = async () => {
+  if (newItem.value.total_amount < 0) {
+    alert("Total amount cannot be negative.");
+    return;
+  }
+
+  const { error } = await supabase.from("orders").insert([newItem.value]);
+  if (error) {
+    console.error("Error adding record:", error);
+  } else {
     fetchOrders();
-    newOrder.value = {
-      date: "",
-      total_amount: "",
-      status: "",
-      notes: "",
-      customer_id: "",
-      shipping_id: "",
-    };
+    newItem.value = { date: "", total_amount: 0, status: "Pending", notes: "", CUSTOMER_id: null, SHIPPING_id: null };
   }
 };
 
-// Delete an order
-const deleteOrder = async (id) => {
+const deleteItem = async (id) => {
   const { error } = await supabase.from("orders").delete().eq("id", id);
-  if (error) console.error(error);
-  else fetchOrders();
+  if (error) {
+    console.error("Error deleting record:", error);
+  } else {
+    fetchOrders();
+  }
 };
 
 onMounted(fetchOrders);
 </script>
 
 <template>
-  <div class="container">
-    <h2>📑 Order Management</h2>
-
-    <!-- Orders Table -->
+  <div>
+    <h2>Orders List</h2>
     <table>
       <thead>
         <tr>
@@ -94,77 +90,59 @@ onMounted(fetchOrders);
         </tr>
       </thead>
       <tbody>
-        <tr v-for="order in orders" :key="order.id">
-          <td>{{ order.id }}</td>
+        <tr v-for="item in orders" :key="item.id">
+          <td>{{ item.id }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.date" type="datetime-local" /></td>
+          <td v-else>{{ item.date }}</td>
 
-          <!-- Editable Fields -->
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.date" type="datetime-local" />
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.total_amount" type="number" /></td>
+          <td v-else>{{ item.total_amount }}</td>
+
+          <td v-if="editingItem === item.id">
+            <select v-model="updatedItem.status">
+              <option value="Pending">Pending</option>
+              <option value="Completed">Completed</option>
+              <option value="Shipped">Shipped</option>
+              <option value="Cancelled">Cancelled</option>
+            </select>
           </td>
-          <td v-else>{{ new Date(order.date).toLocaleString() }}</td>
+          <td v-else>{{ item.status }}</td>
 
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.total_amount" type="number" />
-          </td>
-          <td v-else>${{ order.total_amount }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.notes" type="text" /></td>
+          <td v-else>{{ item.notes }}</td>
 
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.status" type="text" />
-          </td>
-          <td v-else>{{ order.status }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.CUSTOMER_id" type="number" /></td>
+          <td v-else>{{ item.CUSTOMER_id }}</td>
 
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.notes" type="text" />
-          </td>
-          <td v-else>{{ order.notes || "N/A" }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.SHIPPING_id" type="number" /></td>
+          <td v-else>{{ item.SHIPPING_id }}</td>
 
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.customer_id" type="number" />
-          </td>
-          <td v-else>{{ order.customer_id || "N/A" }}</td>
-
-          <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.shipping_id" type="number" />
-          </td>
-          <td v-else>{{ order.shipping_id || "N/A" }}</td>
-
-          <!-- Action Buttons -->
           <td>
-            <button v-if="editingOrder === order.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingOrder === order.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(order)">Edit</button>
-            <button class="delete-btn" @click="deleteOrder(order.id)">Delete</button>
+            <button v-if="editingItem === item.id" @click="saveUpdate">Save</button>
+            <button v-if="editingItem === item.id" @click="cancelEditing">Cancel</button>
+            <button v-else @click="startEditing(item)">Edit</button>
+            <button @click="deleteItem(item.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
-
-    <!-- Add New Order -->
     <h3>Add New Order</h3>
-    <div class="add-form">
-      <input v-model="newOrder.date" type="datetime-local" />
-      <input v-model="newOrder.total_amount" type="number" placeholder="Total Amount" />
-      <input v-model="newOrder.status" type="text" placeholder="Status" />
-      <input v-model="newOrder.notes" type="text" placeholder="Notes" />
-      <input v-model="newOrder.customer_id" type="number" placeholder="Customer ID" />
-      <input v-model="newOrder.shipping_id" type="number" placeholder="Shipping ID" />
-      <button class="add-btn" @click="addOrder">Add</button>
-    </div>
+    <input v-model="newItem.date" type="datetime-local" placeholder="Date" />
+    <input v-model="newItem.total_amount" type="number" placeholder="Total Amount" />
+    <select v-model="newItem.status">
+      <option value="Pending">Pending</option>
+      <option value="Completed">Completed</option>
+      <option value="Shipped">Shipped</option>
+      <option value="Cancelled">Cancelled</option>
+    </select>
+    <input v-model="newItem.notes" type="text" placeholder="Notes" />
+    <input v-model="newItem.CUSTOMER_id" type="number" placeholder="Customer ID" />
+    <input v-model="newItem.SHIPPING_id" type="number" placeholder="Shipping ID" />
+    <button @click="addItem">Add Order</button>
   </div>
 </template>
 
 <style scoped>
-.container {
-  max-width: 900px;
-  margin: auto;
-  text-align: center;
-  font-family: Arial, sans-serif;
-}
-
-h2 {
-  margin-bottom: 15px;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -173,63 +151,17 @@ table {
 
 th, td {
   border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+  padding: 8px;
+  text-align: left;
 }
 
 th {
-  background-color: #007bff;
-  color: white;
-}
-
-input {
-  padding: 5px;
-  width: 100px;
-  border: 1px solid #ccc;
+  background-color: #f4f4f4;
 }
 
 button {
-  padding: 7px 12px;
-  border: none;
+  margin: 5px;
+  padding: 5px 10px;
   cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
-}
-
-.edit-btn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.save-btn {
-  background-color: #5cb85c;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  color: white;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.add-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.add-form {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.add-form input {
-  padding: 5px;
-  border: 1px solid #ddd;
 }
 </style>
