@@ -3,145 +3,159 @@ import { ref, onMounted } from "vue";
 import { supabase } from "../lib/supabaseClient";
 
 const suppliers = ref([]);
-const editingSupplier = ref(null);
-const updatedSupplier = ref({});
-const newSupplier = ref({
+const editingItem = ref(null);
+const updatedItem = ref({});
+const newItem = ref({
   name: "",
+  contact_person: "",
   phone_number: "",
-  country: "",
   email: "",
+  address: "",
+  zip_code: "",
+  country: "",
+  rating: null,
+  notes: ""
 });
 
-// Fetch suppliers from Supabase
 const fetchSuppliers = async () => {
   let { data, error } = await supabase
     .from("supplier")
-    .select("id, name, phone_number, country, email");
+    .select("id, name, contact_person, phone_number, email, address, zip_code, country, rating, notes");
 
   if (error) console.error(error);
   else suppliers.value = data;
 };
 
-// Enable editing mode
-const startEditing = (supplier) => {
-  editingSupplier.value = supplier.id;
-  updatedSupplier.value = { ...supplier };
+const startEditing = (item) => {
+  editingItem.value = item.id;
+  updatedItem.value = { ...item };
 };
 
-// Cancel editing mode
 const cancelEditing = () => {
-  editingSupplier.value = null;
-  updatedSupplier.value = {};
+  editingItem.value = null;
+  updatedItem.value = {};
 };
 
-// Save updated supplier data
 const saveUpdate = async () => {
-  const { id, ...fields } = updatedSupplier.value;
-  const { error } = await supabase.from("supplier").update(fields).eq("id", id);
+  if (updatedItem.value.rating < 0) {
+    alert("Rating cannot be negative.");
+    return;
+  }
 
-  if (error) console.error(error);
-  else {
+  const { id, name, contact_person, phone_number, email, address, zip_code, country, rating, notes } = updatedItem.value;
+  const { error } = await supabase
+    .from("supplier")
+    .update({ name, contact_person, phone_number, email, address, zip_code, country, rating, notes })
+    .eq("id", id);
+
+  if (error) {
+    console.error("Error updating record:", error);
+  } else {
     fetchSuppliers();
     cancelEditing();
   }
 };
 
-// Add a new supplier
-const addSupplier = async () => {
-  const { error } = await supabase.from("supplier").insert([newSupplier.value]);
-  if (error) console.error(error);
-  else {
+const addItem = async () => {
+  if (newItem.value.rating < 0) {
+    alert("Rating cannot be negative.");
+    return;
+  }
+
+  const { error } = await supabase.from("supplier").insert([newItem.value]);
+  if (error) {
+    console.error("Error adding record:", error);
+  } else {
     fetchSuppliers();
-    newSupplier.value = { name: "", phone_number: "", country: "", email: "" };
+    newItem.value = { name: "", contact_person: "", phone_number: "", email: "", address: "", zip_code: "", country: "", rating: null, notes: "" };
   }
 };
 
-// Delete a supplier
-const deleteSupplier = async (id) => {
+const deleteItem = async (id) => {
   const { error } = await supabase.from("supplier").delete().eq("id", id);
-  if (error) console.error(error);
-  else fetchSuppliers();
+  if (error) {
+    console.error("Error deleting record:", error);
+  } else {
+    fetchSuppliers();
+  }
 };
 
 onMounted(fetchSuppliers);
 </script>
 
 <template>
-  <div class="container">
-    <h2>🏢 Supplier Management</h2>
-
-    <!-- Suppliers Table -->
+  <div>
+    <h2>Suppliers List</h2>
     <table>
       <thead>
         <tr>
           <th>ID</th>
           <th>Name</th>
+          <th>Contact Person</th>
           <th>Phone Number</th>
-          <th>Country</th>
           <th>Email</th>
+          <th>Address</th>
+          <th>Zip Code</th>
+          <th>Country</th>
+          <th>Rating</th>
+          <th>Notes</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="supplier in suppliers" :key="supplier.id">
-          <td>{{ supplier.id }}</td>
+        <tr v-for="item in suppliers" :key="item.id">
+          <td>{{ item.id }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.name" type="text" /></td>
+          <td v-else>{{ item.name }}</td>
 
-          <!-- Editable Fields -->
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.name" type="text" />
-          </td>
-          <td v-else>{{ supplier.name }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.contact_person" type="text" /></td>
+          <td v-else>{{ item.contact_person }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.phone_number" type="text" />
-          </td>
-          <td v-else>{{ supplier.phone_number }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.phone_number" type="text" /></td>
+          <td v-else>{{ item.phone_number }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.country" type="text" />
-          </td>
-          <td v-else>{{ supplier.country }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.email" type="email" /></td>
+          <td v-else>{{ item.email }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.email" type="email" />
-          </td>
-          <td v-else>{{ supplier.email || "N/A" }}</td>
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.address" type="text" /></td>
+          <td v-else>{{ item.address }}</td>
 
-          <!-- Action Buttons -->
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.zip_code" type="text" /></td>
+          <td v-else>{{ item.zip_code }}</td>
+
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.country" type="text" /></td>
+          <td v-else>{{ item.country }}</td>
+
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.rating" type="number" /></td>
+          <td v-else>{{ item.rating }}</td>
+
+          <td v-if="editingItem === item.id"><input v-model="updatedItem.notes" type="text" /></td>
+          <td v-else>{{ item.notes }}</td>
+
           <td>
-            <button v-if="editingSupplier === supplier.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingSupplier === supplier.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(supplier)">Edit</button>
-            <button class="delete-btn" @click="deleteSupplier(supplier.id)">Delete</button>
+            <button v-if="editingItem === item.id" @click="saveUpdate">Save</button>
+            <button v-if="editingItem === item.id" @click="cancelEditing">Cancel</button>
+            <button v-else @click="startEditing(item)">Edit</button>
+            <button @click="deleteItem(item.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
-
-    <!-- Add New Supplier -->
     <h3>Add New Supplier</h3>
-    <div class="add-form">
-      <input v-model="newSupplier.name" type="text" placeholder="Supplier Name" />
-      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" />
-      <input v-model="newSupplier.country" type="text" placeholder="Country" />
-      <input v-model="newSupplier.email" type="email" placeholder="Email" />
-      <button class="add-btn" @click="addSupplier">Add</button>
-    </div>
+    <input v-model="newItem.name" type="text" placeholder="Name" />
+    <input v-model="newItem.contact_person" type="text" placeholder="Contact Person" />
+    <input v-model="newItem.phone_number" type="text" placeholder="Phone Number" />
+    <input v-model="newItem.email" type="email" placeholder="Email" />
+    <input v-model="newItem.address" type="text" placeholder="Address" />
+    <input v-model="newItem.zip_code" type="text" placeholder="Zip Code" />
+    <input v-model="newItem.country" type="text" placeholder="Country" />
+    <input v-model="newItem.rating" type="number" placeholder="Rating" />
+    <input v-model="newItem.notes" type="text" placeholder="Notes" />
+    <button @click="addItem">Add Supplier</button>
   </div>
 </template>
 
 <style scoped>
-.container {
-  max-width: 900px;
-  margin: auto;
-  text-align: center;
-  font-family: Arial, sans-serif;
-}
-
-h2 {
-  margin-bottom: 15px;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -150,63 +164,17 @@ table {
 
 th, td {
   border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+  padding: 8px;
+  text-align: left;
 }
 
 th {
-  background-color: #007bff;
-  color: white;
-}
-
-input {
-  padding: 5px;
-  width: 140px;
-  border: 1px solid #ccc;
+  background-color: #f4f4f4;
 }
 
 button {
-  padding: 7px 12px;
-  border: none;
+  margin: 5px;
+  padding: 5px 10px;
   cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
-}
-
-.edit-btn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.save-btn {
-  background-color: #5cb85c;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  color: white;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.add-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.add-form {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.add-form input {
-  padding: 5px;
-  border: 1px solid #ddd;
 }
 </style>
