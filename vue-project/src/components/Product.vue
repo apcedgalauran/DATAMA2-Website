@@ -3,40 +3,53 @@ import { ref, onMounted } from "vue";
 import { supabase } from "../lib/supabaseClient";
 
 const products = ref([]);
-const editingProduct = ref(null);
-const updatedProduct = ref({});
-const newProduct = ref({
+const editingItem = ref(null);
+const updatedItem = ref({});
+const newItem = ref({
   name: "",
-  price: "",
-  stock_quantity: "",
-  category: "",
+  description: "",
+  price: 0,
+  stock_quantity: 0,
+  reorder_level: 0,
+  rating: 0,
 });
 
-// Fetch products from Supabase
+// Fetch products
 const fetchProducts = async () => {
-  let { data, error } = await supabase
-    .from("product")
-    .select("id, name, price, stock_quantity, category");
-
+  let { data, error } = await supabase.from("product").select("*");
   if (error) console.error(error);
   else products.value = data;
 };
 
+// Validate numbers (prevent negative values)
+const validateNumber = (event, field) => {
+  if (event.target.value < 0) {
+    updatedItem.value[field] = 0;
+  }
+};
+
+// Validate numbers for new products
+const validateNewNumber = (event, field) => {
+  if (event.target.value < 0) {
+    newItem.value[field] = 0;
+  }
+};
+
 // Enable editing mode
-const startEditing = (product) => {
-  editingProduct.value = product.id;
-  updatedProduct.value = { ...product };
+const startEditing = (item) => {
+  editingItem.value = item.id;
+  updatedItem.value = { ...item };
 };
 
 // Cancel editing mode
 const cancelEditing = () => {
-  editingProduct.value = null;
-  updatedProduct.value = {};
+  editingItem.value = null;
+  updatedItem.value = {};
 };
 
-// Save updated data
+// Save updated product
 const saveUpdate = async () => {
-  const { id, ...fields } = updatedProduct.value;
+  const { id, ...fields } = updatedItem.value;
   const { error } = await supabase.from("product").update(fields).eq("id", id);
 
   if (error) console.error(error);
@@ -47,17 +60,24 @@ const saveUpdate = async () => {
 };
 
 // Add a new product
-const addProduct = async () => {
-  const { error } = await supabase.from("product").insert([newProduct.value]);
+const addItem = async () => {
+  const { error } = await supabase.from("product").insert([newItem.value]);
   if (error) console.error(error);
   else {
     fetchProducts();
-    newProduct.value = { name: "", price: "", stock_quantity: "", category: "" };
+    newItem.value = {
+      name: "",
+      description: "",
+      price: 0,
+      stock_quantity: 0,
+      reorder_level: 0,
+      rating: 0,
+    };
   }
 };
 
 // Delete a product
-const deleteProduct = async (id) => {
+const deleteItem = async (id) => {
   const { error } = await supabase.from("product").delete().eq("id", id);
   if (error) console.error(error);
   else fetchProducts();
@@ -70,62 +90,72 @@ onMounted(fetchProducts);
   <div class="container">
     <h2>📦 Product Management</h2>
 
-    <!-- Products Table -->
     <table>
       <thead>
         <tr>
           <th>ID</th>
           <th>Name</th>
+          <th>Description</th>
           <th>Price</th>
           <th>Stock Quantity</th>
-          <th>Category</th>
+          <th>Reorder Level</th>
+          <th>Rating</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        <tr v-for="product in products" :key="product.id">
-          <td>{{ product.id }}</td>
+        <tr v-for="item in products" :key="item.id">
+          <td>{{ item.id }}</td>
 
-          <!-- Editable Fields -->
-          <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.name" type="text" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.name" type="text" />
           </td>
-          <td v-else>{{ product.name }}</td>
+          <td v-else>{{ item.name }}</td>
 
-          <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.price" type="number" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.description" type="text" />
           </td>
-          <td v-else>${{ product.price }}</td>
+          <td v-else>{{ item.description || "N/A" }}</td>
 
-          <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.stock_quantity" type="number" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.price" type="number" min="0" />
           </td>
-          <td v-else>{{ product.stock_quantity }}</td>
+          <td v-else>${{ item.price }}</td>
 
-          <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.category" type="text" />
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.stock_quantity" type="number" @input="validateNumber($event, 'stock_quantity')" />
           </td>
-          <td v-else>{{ product.category }}</td>
+          <td v-else>{{ item.stock_quantity }}</td>
 
-          <!-- Action Buttons -->
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.reorder_level" type="number" @input="validateNumber($event, 'reorder_level')" />
+          </td>
+          <td v-else>{{ item.reorder_level }}</td>
+
+          <td v-if="editingItem === item.id">
+            <input v-model="updatedItem.rating" type="number" min="0" max="5" @input="validateNumber($event, 'rating')" />
+          </td>
+          <td v-else>{{ item.rating }}/5</td>
+
           <td>
-            <button v-if="editingProduct === product.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingProduct === product.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(product)">Edit</button>
-            <button class="delete-btn" @click="deleteProduct(product.id)">Delete</button>
+            <button v-if="editingItem === item.id" class="save-btn" @click="saveUpdate">Save</button>
+            <button v-if="editingItem === item.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
+            <button v-else class="edit-btn" @click="startEditing(item)">Edit</button>
+            <button class="delete-btn" @click="deleteItem(item.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Add New Product -->
     <h3>Add New Product</h3>
     <div class="add-form">
-      <input v-model="newProduct.name" type="text" placeholder="Product Name" />
-      <input v-model="newProduct.price" type="number" placeholder="Price" />
-      <input v-model="newProduct.stock_quantity" type="number" placeholder="Stock Quantity" />
-      <input v-model="newProduct.category" type="text" placeholder="Category" />
-      <button class="add-btn" @click="addProduct">Add</button>
+      <input v-model="newItem.name" type="text" placeholder="Product Name" />
+      <input v-model="newItem.description" type="text" placeholder="Description" />
+      <input v-model="newItem.price" type="number" min="0" placeholder="Price" />
+      <input v-model="newItem.stock_quantity" type="number" placeholder="Stock Quantity" @input="validateNewNumber($event, 'stock_quantity')" />
+      <input v-model="newItem.reorder_level" type="number" placeholder="Reorder Level" @input="validateNewNumber($event, 'reorder_level')" />
+      <input v-model="newItem.rating" type="number" min="0" max="5" placeholder="Rating (0-5)" @input="validateNewNumber($event, 'rating')" />
+      <button class="add-btn" @click="addItem">Add</button>
     </div>
   </div>
 </template>
@@ -135,78 +165,4 @@ onMounted(fetchProducts);
   max-width: 900px;
   margin: auto;
   text-align: center;
-  font-family: Arial, sans-serif;
-}
-
-h2 {
-  margin-bottom: 15px;
-}
-
-table {
-  width: 100%;
-  border-collapse: collapse;
-  margin-top: 10px;
-}
-
-th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
-}
-
-th {
-  background-color: #007bff;
-  color: white;
-}
-
-input {
-  padding: 5px;
-  width: 120px;
-  border: 1px solid #ccc;
-}
-
-button {
-  padding: 7px 12px;
-  border: none;
-  cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
-}
-
-.edit-btn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.save-btn {
-  background-color: #5cb85c;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  color: white;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.add-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.add-form {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.add-form input {
-  padding: 5px;
-  border: 1px solid #ddd;
-}
-</style>
+  font-famil
