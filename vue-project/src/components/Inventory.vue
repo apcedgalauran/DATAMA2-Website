@@ -5,71 +5,65 @@ import { supabase } from "../lib/supabaseClient";
 const inventory = ref([]);
 const editingItem = ref(null);
 const updatedItem = ref({});
-const newItem = ref({
-  reorder_level: "",
-  stock_quantity: "",
-  restock_date: "",
-  restock_quantity: "",
-  location: "",
-});
+const newItem = ref({ reorder_level: 0, stock_quantity: 0, restock_date: "", restock_quantity: 0, location: "" });
 
-// Fetch inventory data
 const fetchInventory = async () => {
   let { data, error } = await supabase
     .from("inventory")
     .select("id, reorder_level, stock_quantity, restock_date, restock_quantity, location, time_update");
-  
+
   if (error) console.error(error);
   else inventory.value = data;
 };
 
-// Enable editing mode
 const startEditing = (item) => {
   editingItem.value = item.id;
   updatedItem.value = { ...item };
 };
 
-// Cancel editing mode
 const cancelEditing = () => {
   editingItem.value = null;
   updatedItem.value = {};
 };
 
-// Save updated data
 const saveUpdate = async () => {
-  const { id, ...fields } = updatedItem.value;
+  if (updatedItem.value.reorder_level < 0 || updatedItem.value.stock_quantity < 0 || updatedItem.value.restock_quantity < 0) {
+    alert("Values cannot be negative.");
+    return;
+  }
+  
+  const { id, reorder_level, stock_quantity, restock_date, restock_quantity, location } = updatedItem.value;
   const { error } = await supabase
     .from("inventory")
-    .update(fields)
+    .update({ reorder_level, stock_quantity, restock_date, restock_quantity, location })
     .eq("id", id);
 
-  if (error) console.error(error);
+  if (error) console.error("Error updating record:", error);
   else {
     fetchInventory();
     cancelEditing();
   }
 };
 
-// Add a new inventory item
-const addItem = async () => {
+const addInventory = async () => {
+  if (newItem.value.reorder_level < 0 || newItem.value.stock_quantity < 0 || newItem.value.restock_quantity < 0) {
+    alert("Values cannot be negative.");
+    return;
+  }
+
   const { error } = await supabase.from("inventory").insert([newItem.value]);
-  if (error) console.error(error);
+
+  if (error) console.error("Error adding record:", error);
   else {
     fetchInventory();
-    newItem.value = {
-      reorder_level: "",
-      stock_quantity: "",
-      restock_date: "",
-      restock_quantity: "",
-      location: "",
-    };
+    newItem.value = { reorder_level: 0, stock_quantity: 0, restock_date: "", restock_quantity: 0, location: "" };
   }
 };
 
-// Delete an inventory item
-const deleteItem = async (id) => {
+const deleteInventory = async (id) => {
   const { error } = await supabase.from("inventory").delete().eq("id", id);
-  if (error) console.error(error);
+
+  if (error) console.error("Error deleting record:", error);
   else fetchInventory();
 };
 
@@ -77,10 +71,8 @@ onMounted(fetchInventory);
 </script>
 
 <template>
-  <div class="container">
-    <h2>📦 Inventory Management</h2>
-    
-    <!-- Inventory Table -->
+  <div>
+    <h2>Inventory List</h2>
     <table>
       <thead>
         <tr>
@@ -97,71 +89,55 @@ onMounted(fetchInventory);
       <tbody>
         <tr v-for="item in inventory" :key="item.id">
           <td>{{ item.id }}</td>
-
-          <!-- Editable Fields -->
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.reorder_level" type="number" />
+            <input v-model.number="updatedItem.reorder_level" type="number" />
           </td>
           <td v-else>{{ item.reorder_level }}</td>
 
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.stock_quantity" type="number" />
+            <input v-model.number="updatedItem.stock_quantity" type="number" />
           </td>
           <td v-else>{{ item.stock_quantity }}</td>
 
           <td v-if="editingItem === item.id">
             <input v-model="updatedItem.restock_date" type="datetime-local" />
           </td>
-          <td v-else>{{ new Date(item.restock_date).toLocaleString() }}</td>
+          <td v-else>{{ item.restock_date ? new Date(item.restock_date).toLocaleString() : "N/A" }}</td>
 
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.restock_quantity" type="number" />
+            <input v-model.number="updatedItem.restock_quantity" type="number" />
           </td>
           <td v-else>{{ item.restock_quantity }}</td>
 
           <td v-if="editingItem === item.id">
             <input v-model="updatedItem.location" type="text" />
           </td>
-          <td v-else>{{ item.location }}</td>
+          <td v-else>{{ item.location || "N/A" }}</td>
 
           <td>{{ new Date(item.time_update).toLocaleString() }}</td>
-
-          <!-- Action Buttons -->
           <td>
-            <button v-if="editingItem === item.id" class="save-btn" @click="saveUpdate">Save</button>
-            <button v-if="editingItem === item.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
-            <button v-else class="edit-btn" @click="startEditing(item)">Edit</button>
-            <button class="delete-btn" @click="deleteItem(item.id)">Delete</button>
+            <button v-if="editingItem === item.id" @click="saveUpdate">Save</button>
+            <button v-if="editingItem === item.id" @click="cancelEditing">Cancel</button>
+            <button v-else @click="startEditing(item)">Edit</button>
+            <button @click="deleteInventory(item.id)">Delete</button>
           </td>
         </tr>
       </tbody>
     </table>
 
-    <!-- Add New Inventory -->
-    <h3>Add New Inventory</h3>
-    <div class="add-form">
-      <input v-model="newItem.reorder_level" type="number" placeholder="Reorder Level" />
-      <input v-model="newItem.stock_quantity" type="number" placeholder="Stock Quantity" />
+    <h3>Add New Inventory Item</h3>
+    <form @submit.prevent="addInventory">
+      <input v-model.number="newItem.reorder_level" type="number" placeholder="Reorder Level" required />
+      <input v-model.number="newItem.stock_quantity" type="number" placeholder="Stock Quantity" required />
       <input v-model="newItem.restock_date" type="datetime-local" />
-      <input v-model="newItem.restock_quantity" type="number" placeholder="Restock Quantity" />
+      <input v-model.number="newItem.restock_quantity" type="number" placeholder="Restock Quantity" required />
       <input v-model="newItem.location" type="text" placeholder="Location" />
-      <button class="add-btn" @click="addItem">Add</button>
-    </div>
+      <button type="submit">Add</button>
+    </form>
   </div>
 </template>
 
 <style scoped>
-.container {
-  max-width: 900px;
-  margin: auto;
-  text-align: center;
-  font-family: Arial, sans-serif;
-}
-
-h2 {
-  margin-bottom: 15px;
-}
-
 table {
   width: 100%;
   border-collapse: collapse;
@@ -170,63 +146,17 @@ table {
 
 th, td {
   border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+  padding: 8px;
+  text-align: left;
 }
 
 th {
-  background-color: #4CAF50;
-  color: white;
-}
-
-input {
-  padding: 5px;
-  width: 100px;
-  border: 1px solid #ccc;
+  background-color: #f4f4f4;
 }
 
 button {
-  padding: 7px 12px;
-  border: none;
+  margin: 5px;
+  padding: 5px 10px;
   cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
-}
-
-.edit-btn {
-  background-color: #f0ad4e;
-  color: white;
-}
-
-.save-btn {
-  background-color: #5cb85c;
-  color: white;
-}
-
-.cancel-btn {
-  background-color: #d9534f;
-  color: white;
-}
-
-.delete-btn {
-  background-color: #e74c3c;
-  color: white;
-}
-
-.add-btn {
-  background-color: #3498db;
-  color: white;
-}
-
-.add-form {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
-}
-
-.add-form input {
-  padding: 5px;
-  border: 1px solid #ddd;
 }
 </style>
