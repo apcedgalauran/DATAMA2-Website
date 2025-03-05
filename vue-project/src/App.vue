@@ -19,8 +19,8 @@
 <script>
 import Inventory from "./components/Inventory.vue";
 import Orders from "./components/Orders.vue";
-import Products from "./components/Products.vue";
-import Suppliers from "./components/Suppliers.vue";
+import Products from "./components/Product.vue";
+import Suppliers from "./components/Supplier.vue";
 
 export default {
   components: { Inventory, Orders, Products, Suppliers },
