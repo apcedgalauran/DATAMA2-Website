@@ -8,15 +8,19 @@ const updatedSupplier = ref({});
 const newSupplier = ref({
   name: "",
   phone_number: "",
-  country: "",
   email: "",
+  address: "",
+  zip_code: "",
+  country: "",
+  rating: "",
+  notes: "",
 });
 
 // Fetch suppliers from Supabase
 const fetchSuppliers = async () => {
   let { data, error } = await supabase
     .from("supplier")
-    .select("id, name, phone_number, country, email");
+    .select("id, name, phone_number, email, address, zip_code, country, rating, notes");
 
   if (error) console.error(error);
   else suppliers.value = data;
@@ -52,7 +56,7 @@ const addSupplier = async () => {
   if (error) console.error(error);
   else {
     fetchSuppliers();
-    newSupplier.value = { name: "", phone_number: "", country: "", email: "" };
+    newSupplier.value = { name: "", phone_number: "", email: "", address: "", zip_code: "", country: "", rating: "", notes: "" };
   }
 };
 
@@ -61,6 +65,15 @@ const deleteSupplier = async (id) => {
   const { error } = await supabase.from("supplier").delete().eq("id", id);
   if (error) console.error(error);
   else fetchSuppliers();
+};
+
+// Ensure only numbers are entered
+const validateNumberInput = (event, field) => {
+  newSupplier.value[field] = event.target.value.replace(/\D/g, "");
+};
+
+const validateUpdatedNumberInput = (event, field) => {
+  updatedSupplier.value[field] = event.target.value.replace(/\D/g, "");
 };
 
 onMounted(fetchSuppliers);
@@ -77,37 +90,46 @@ onMounted(fetchSuppliers);
           <th>ID</th>
           <th>Name</th>
           <th>Phone Number</th>
-          <th>Country</th>
           <th>Email</th>
+          <th>Address</th>
+          <th>Zip Code</th>
+          <th>Country</th>
+          <th>Rating</th>
+          <th>Notes</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="supplier in suppliers" :key="supplier.id">
           <td>{{ supplier.id }}</td>
-
-          <!-- Editable Fields -->
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.name" type="text" />
-          </td>
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.name" type="text" /></td>
           <td v-else>{{ supplier.name }}</td>
 
           <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.phone_number" type="text" />
+            <input v-model="updatedSupplier.phone_number" type="text" @input="validateUpdatedNumberInput($event, 'phone_number')" />
           </td>
           <td v-else>{{ supplier.phone_number }}</td>
 
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.country" type="text" />
-          </td>
-          <td v-else>{{ supplier.country }}</td>
-
-          <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.email" type="email" />
-          </td>
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.email" type="email" /></td>
           <td v-else>{{ supplier.email || "N/A" }}</td>
 
-          <!-- Action Buttons -->
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.address" type="text" /></td>
+          <td v-else>{{ supplier.address }}</td>
+
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.zip_code" type="text" @input="validateUpdatedNumberInput($event, 'zip_code')" />
+          </td>
+          <td v-else>{{ supplier.zip_code }}</td>
+
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.country" type="text" /></td>
+          <td v-else>{{ supplier.country }}</td>
+
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.rating" type="number" step="0.1" /></td>
+          <td v-else>{{ supplier.rating }}</td>
+
+          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.notes" type="text" /></td>
+          <td v-else>{{ supplier.notes }}</td>
+
           <td>
             <button v-if="editingSupplier === supplier.id" class="save-btn" @click="saveUpdate">Save</button>
             <button v-if="editingSupplier === supplier.id" class="cancel-btn" @click="cancelEditing">Cancel</button>
@@ -122,13 +144,18 @@ onMounted(fetchSuppliers);
     <h3>Add New Supplier</h3>
     <div class="add-form">
       <input v-model="newSupplier.name" type="text" placeholder="Supplier Name" />
-      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" />
-      <input v-model="newSupplier.country" type="text" placeholder="Country" />
+      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" @input="validateNumberInput($event, 'phone_number')" />
       <input v-model="newSupplier.email" type="email" placeholder="Email" />
+      <input v-model="newSupplier.address" type="text" placeholder="Address" />
+      <input v-model="newSupplier.zip_code" type="text" placeholder="Zip Code" @input="validateNumberInput($event, 'zip_code')" />
+      <input v-model="newSupplier.country" type="text" placeholder="Country" />
+      <input v-model="newSupplier.rating" type="number" step="0.1" placeholder="Rating" />
+      <input v-model="newSupplier.notes" type="text" placeholder="Notes" />
       <button class="add-btn" @click="addSupplier">Add</button>
     </div>
   </div>
 </template>
+
 
 <style scoped>
 .container {
