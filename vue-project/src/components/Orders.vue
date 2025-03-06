@@ -14,6 +14,9 @@ const newOrder = ref({
   shipping_id: "",
 });
 
+const validStatuses = ["Pending", "Completed", "Shipped", "Cancelled"];
+const statusError = ref("");
+
 // Fetch orders from Supabase
 const fetchOrders = async () => {
   let { data, error } = await supabase
@@ -34,26 +37,48 @@ const startEditing = (order) => {
 const cancelEditing = () => {
   editingOrder.value = null;
   updatedOrder.value = {};
+  statusError.value = "";
 };
 
 // Save updated data
 const saveUpdate = async () => {
+  if (!validStatuses.includes(updatedOrder.value.status)) {
+    statusError.value = "Invalid status. Must be 'Pending', 'Completed', 'Shipped', or 'Cancelled'.";
+    return;
+  }
+  statusError.value = "";
   const { id, ...fields } = updatedOrder.value;
   const { error } = await supabase.from("orders").update(fields).eq("id", id);
 
   if (error) console.error(error);
   else {
-    fetchOrders();
+    await fetchOrders();
     cancelEditing();
   }
 };
 
 // Add a new order
 const addOrder = async () => {
-  const { error } = await supabase.from("orders").insert([newOrder.value]);
-  if (error) console.error(error);
-  else {
-    fetchOrders();
+  if (!validStatuses.includes(newOrder.value.status)) {
+    statusError.value = "Invalid status. Must be 'Pending', 'Completed', 'Shipped', or 'Cancelled'.";
+    return;
+  }
+  statusError.value = "";
+  const newOrderData = {
+    date: newOrder.value.date ? new Date(newOrder.value.date).toISOString() : null,
+    total_amount: newOrder.value.total_amount,
+    status: newOrder.value.status,
+    notes: newOrder.value.notes,
+    customer_id: newOrder.value.customer_id,
+    shipping_id: newOrder.value.shipping_id,
+  };
+
+  const { error } = await supabase.from("orders").insert([newOrderData]);
+
+  if (error) {
+    console.error("Error inserting order:", error);
+  } else {
+    await fetchOrders();
     newOrder.value = {
       date: "",
       total_amount: "",
@@ -78,6 +103,8 @@ onMounted(fetchOrders);
 <template>
   <div class="container">
     <h2>📑 Order Management</h2>
+
+    <p v-if="statusError" class="error">{{ statusError }}</p>
 
     <!-- Orders Table -->
     <table>
@@ -109,7 +136,9 @@ onMounted(fetchOrders);
           <td v-else>${{ order.total_amount }}</td>
 
           <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.status" type="text" />
+            <select v-model="updatedOrder.status">
+              <option v-for="status in validStatuses" :key="status" :value="status">{{ status }}</option>
+            </select>
           </td>
           <td v-else>{{ order.status }}</td>
 
@@ -144,7 +173,9 @@ onMounted(fetchOrders);
     <div class="add-form">
       <input v-model="newOrder.date" type="datetime-local" />
       <input v-model="newOrder.total_amount" type="number" placeholder="Total Amount" />
-      <input v-model="newOrder.status" type="text" placeholder="Status" />
+      <select v-model="newOrder.status">
+        <option v-for="status in validStatuses" :key="status" :value="status">{{ status }}</option>
+      </select>
       <input v-model="newOrder.notes" type="text" placeholder="Notes" />
       <input v-model="newOrder.customer_id" type="number" placeholder="Customer ID" />
       <input v-model="newOrder.shipping_id" type="number" placeholder="Shipping ID" />
