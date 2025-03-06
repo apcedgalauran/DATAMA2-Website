@@ -1,0 +1,59 @@
+/* Global Reset */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: "Inter", sans-serif;
+}
+
+/* Centering the Table Wrapper */
+.content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 70vh; /* Ensures centering works */
+    width: 100%;
+}
+
+
+
+
+/* Buttons */
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: white;
+    color: #272727;
+    cursor: pointer;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: #346153;
+    color: white;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .navbar {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .content {
+        width: 95%;
+    }
+
+    .content table {
+        width: 100%;
+    }
+
+    button {
+        width: 100%;
+        text-align: center;
+    }
+}

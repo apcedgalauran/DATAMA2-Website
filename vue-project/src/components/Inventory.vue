@@ -15,12 +15,16 @@ const newItem = ref({
 
 // Fetch inventory data
 const fetchInventory = async () => {
-  let { data, error } = await supabase
+  const { data, error } = await supabase
     .from("inventory")
-    .select("id, reorder_level, stock_quantity, restock_date, restock_quantity, location, time_update");
-  
-  if (error) console.error(error);
-  else inventory.value = data;
+    .select("id, reorder_level, stock_quantity, restock_date, restock_quantity, location, time_update")
+    .order("id", { ascending: true });
+
+  if (error) {
+    console.error("Error fetching inventory:", error);
+  } else {
+    inventory.value = data;
+  }
 };
 
 // Enable editing mode
@@ -38,24 +42,25 @@ const cancelEditing = () => {
 // Save updated data
 const saveUpdate = async () => {
   const { id, ...fields } = updatedItem.value;
-  const { error } = await supabase
-    .from("inventory")
-    .update(fields)
-    .eq("id", id);
+  const { error } = await supabase.from("inventory").update(fields).eq("id", id);
 
-  if (error) console.error(error);
-  else {
-    fetchInventory();
+  if (error) {
+    console.error("Error updating item:", error);
+  } else {
+    await fetchInventory(); // Ensure latest data is fetched
     cancelEditing();
   }
 };
 
 // Add a new inventory item
 const addItem = async () => {
-  const { error } = await supabase.from("inventory").insert([newItem.value]);
-  if (error) console.error(error);
-  else {
-    fetchInventory();
+  const itemToAdd = { ...newItem.value }; // Copy new item for reactivity
+  const { error } = await supabase.from("inventory").insert([itemToAdd]);
+
+  if (error) {
+    console.error("Error adding item:", error);
+  } else {
+    await fetchInventory(); // Refresh inventory to show new item
     newItem.value = {
       reorder_level: "",
       stock_quantity: "",
@@ -69,12 +74,17 @@ const addItem = async () => {
 // Delete an inventory item
 const deleteItem = async (id) => {
   const { error } = await supabase.from("inventory").delete().eq("id", id);
-  if (error) console.error(error);
-  else fetchInventory();
+
+  if (error) {
+    console.error("Error deleting item:", error);
+  } else {
+    await fetchInventory(); // Refresh after deleting
+  }
 };
 
 onMounted(fetchInventory);
 </script>
+
 
 <template>
   <div class="container">

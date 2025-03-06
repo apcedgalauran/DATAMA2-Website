@@ -23,6 +23,7 @@ import Inventory from "./components/Inventory.vue";
 import Orders from "./components/Orders.vue";
 import Products from "./components/Product.vue";
 import Suppliers from "./components/Supplier.vue";
+import './main.css';
 
 export default {
   components: { Inventory, Orders, Products, Suppliers },
@@ -34,50 +35,19 @@ export default {
 };
 </script>
 
-<style>
-/* Centering the content */
-.container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background-color: #f4f4f4; /* Light gray background */
-  padding: 20px;
-}
+<style scoped>
 
-/* Styling the navigation bar */
+/* Navigation Bar */
 .navbar {
-  background: #007bff; /* Blue background */
+  background: #272727;
   padding: 15px 30px;
   border-radius: 10px;
   display: flex;
   justify-content: center;
   gap: 20px;
   margin-bottom: 20px;
-  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-/* Styling the buttons */
-button {
-  padding: 10px 20px;
-  border: none;
-  background-color: white;
-  color: #007bff;
-  cursor: pointer;
-  border-radius: 5px;
-  font-size: 16px;
-  font-weight: bold;
-  transition: background-color 0.3s ease, color 0.3s ease;
-}
 
-button:hover {
-  background-color: #0056b3;
-  color: white;
-}
-
-/* Content styling (removing background from tables) */
-.content {
-  width: 80%;
-}
 </style>
