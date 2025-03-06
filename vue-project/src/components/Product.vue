@@ -10,13 +10,16 @@ const newProduct = ref({
   price: "",
   stock_quantity: "",
   category: "",
+  description: "",
+  reorder_level: "",
+  rating: "",
 });
 
 // Fetch products from Supabase
 const fetchProducts = async () => {
   let { data, error } = await supabase
     .from("product")
-    .select("id, name, price, stock_quantity, category");
+    .select("id, name, price, stock_quantity, category, description, reorder_level, rating");
 
   if (error) console.error(error);
   else products.value = data;
@@ -34,8 +37,23 @@ const cancelEditing = () => {
   updatedProduct.value = {};
 };
 
+// Validate input
+const isValidInput = (product) => {
+  return (
+    Number.isInteger(product.price) && product.price >= 0 &&
+    Number.isInteger(product.stock_quantity) && product.stock_quantity >= 0 &&
+    Number.isInteger(product.reorder_level) && product.reorder_level >= 0 &&
+    Number.isInteger(product.rating) && product.rating >= 1 && product.rating <= 5
+  );
+};
+
 // Save updated data
 const saveUpdate = async () => {
+  if (!isValidInput(updatedProduct.value)) {
+    alert("Invalid input. Ensure values are integers and rating is between 1 and 5.");
+    return;
+  }
+
   const { id, ...fields } = updatedProduct.value;
   const { error } = await supabase.from("product").update(fields).eq("id", id);
 
@@ -48,11 +66,16 @@ const saveUpdate = async () => {
 
 // Add a new product
 const addProduct = async () => {
+  if (!isValidInput(newProduct.value)) {
+    alert("Invalid input. Ensure values are integers and rating is between 1 and 5.");
+    return;
+  }
+
   const { error } = await supabase.from("product").insert([newProduct.value]);
   if (error) console.error(error);
   else {
     fetchProducts();
-    newProduct.value = { name: "", price: "", stock_quantity: "", category: "" };
+    newProduct.value = { name: "", price: "", stock_quantity: "", category: "", description: "", reorder_level: "", rating: "" };
   }
 };
 
@@ -79,13 +102,16 @@ onMounted(fetchProducts);
           <th>Price</th>
           <th>Stock Quantity</th>
           <th>Category</th>
+          <th>Description</th>
+          <th>Reorder Level</th>
+          <th>Rating</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
         <tr v-for="product in products" :key="product.id">
           <td>{{ product.id }}</td>
-
+          
           <!-- Editable Fields -->
           <td v-if="editingProduct === product.id">
             <input v-model="updatedProduct.name" type="text" />
@@ -93,12 +119,12 @@ onMounted(fetchProducts);
           <td v-else>{{ product.name }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.price" type="number" />
+            <input v-model.number="updatedProduct.price" type="number" min="0" step="1" />
           </td>
           <td v-else>${{ product.price }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model="updatedProduct.stock_quantity" type="number" />
+            <input v-model.number="updatedProduct.stock_quantity" type="number" min="0" step="1" />
           </td>
           <td v-else>{{ product.stock_quantity }}</td>
 
@@ -106,6 +132,21 @@ onMounted(fetchProducts);
             <input v-model="updatedProduct.category" type="text" />
           </td>
           <td v-else>{{ product.category }}</td>
+
+          <td v-if="editingProduct === product.id">
+            <input v-model="updatedProduct.description" type="text" />
+          </td>
+          <td v-else>{{ product.description }}</td>
+
+          <td v-if="editingProduct === product.id">
+            <input v-model.number="updatedProduct.reorder_level" type="number" min="0" step="1" />
+          </td>
+          <td v-else>{{ product.reorder_level }}</td>
+
+          <td v-if="editingProduct === product.id">
+            <input v-model.number="updatedProduct.rating" type="number" min="1" max="5" step="1" />
+          </td>
+          <td v-else>{{ product.rating }}</td>
 
           <!-- Action Buttons -->
           <td>
@@ -122,13 +163,19 @@ onMounted(fetchProducts);
     <h3>Add New Product</h3>
     <div class="add-form">
       <input v-model="newProduct.name" type="text" placeholder="Product Name" />
-      <input v-model="newProduct.price" type="number" placeholder="Price" />
-      <input v-model="newProduct.stock_quantity" type="number" placeholder="Stock Quantity" />
+      <input v-model.number="newProduct.price" type="number" min="0" step="1" placeholder="Price" />
+      <input v-model.number="newProduct.stock_quantity" type="number" min="0" step="1" placeholder="Stock Quantity" />
       <input v-model="newProduct.category" type="text" placeholder="Category" />
+      <input v-model="newProduct.description" type="text" placeholder="Description" />
+      <input v-model.number="newProduct.reorder_level" type="number" min="0" step="1" placeholder="Reorder Level" />
+      <input v-model.number="newProduct.rating" type="number" min="1" max="5" step="1" placeholder="Rating (1-5)" />
       <button class="add-btn" @click="addProduct">Add</button>
     </div>
   </div>
 </template>
+
+
+
 
 <style scoped>
 .container {
