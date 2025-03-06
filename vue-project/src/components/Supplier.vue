@@ -158,50 +158,77 @@ onMounted(fetchSuppliers);
 
 
 <style scoped>
+/* General Styling */
 .container {
-  max-width: 900px;
-  margin: auto;
+  max-width: 1000px;
+  margin: 40px auto;
+  padding: 20px;
   text-align: center;
-  font-family: Arial, sans-serif;
+  font-family: "Inter", sans-serif;
+  background: #ffffff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  border-radius: 12px;
 }
 
+/* Headings */
 h2 {
-  margin-bottom: 15px;
+  margin-bottom: 20px;
+  font-size: 24px;
+  color: #333;
 }
 
+/* Table */
 table {
   width: 100%;
   border-collapse: collapse;
-  margin-top: 10px;
+  margin-top: 15px;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
 }
 
 th, td {
-  border: 1px solid #ddd;
-  padding: 10px;
-  text-align: center;
+  padding: 12px;
+  text-align: left;
+  border-bottom: 1px solid #ddd;
 }
 
 th {
-  background-color: #007bff;
+  background-color: #272727;
   color: white;
+  font-weight: 600;
 }
 
+td {
+  background-color: #f9f9f9;
+}
+
+tr:hover {
+  background-color: #f1f1f1;
+}
+
+/* Input Fields */
 input {
-  padding: 5px;
-  width: 140px;
+  padding: 8px;
+  width: 150px;
   border: 1px solid #ccc;
+  border-radius: 6px;
+  font-size: 14px;
 }
 
+/* Buttons */
 button {
-  padding: 7px 12px;
+  padding: 10px 14px;
   border: none;
   cursor: pointer;
-  border-radius: 5px;
-  margin: 3px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.3s ease;
 }
 
 .edit-btn {
-  background-color: #f0ad4e;
+  background-color: #346153;
   color: white;
 }
 
@@ -216,24 +243,48 @@ button {
 }
 
 .delete-btn {
-  background-color: #e74c3c;
+  background-color: #75180e;
   color: white;
 }
 
 .add-btn {
-  background-color: #3498db;
+  background-color:#272727;
   color: white;
 }
 
+/* Button Hover Effects */
+button:hover {
+  opacity: 0.85;
+}
+
+/* Add Form */
 .add-form {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 10px;
-  margin-top: 15px;
+  gap: 12px;
+  margin-top: 20px;
 }
 
 .add-form input {
-  padding: 5px;
+  padding: 8px;
   border: 1px solid #ddd;
+  border-radius: 6px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .add-form {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  input {
+    width: 100%;
+  }
+
+  table {
+    font-size: 14px;
+  }
 }
 </style>
