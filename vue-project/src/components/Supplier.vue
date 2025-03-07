@@ -7,6 +7,7 @@ const editingSupplier = ref(null);
 const updatedSupplier = ref({});
 const newSupplier = ref({
   name: "",
+  contact_person: "",
   phone_number: "",
   email: "",
   address: "",
@@ -20,7 +21,7 @@ const newSupplier = ref({
 const fetchSuppliers = async () => {
   let { data, error } = await supabase
     .from("supplier")
-    .select("id, name, phone_number, email, address, zip_code, country, rating, notes");
+    .select("id, name, contact_person, phone_number, email, address, zip_code, country, rating, notes");
 
   if (error) console.error(error);
   else suppliers.value = data;
@@ -56,7 +57,7 @@ const addSupplier = async () => {
   if (error) console.error(error);
   else {
     fetchSuppliers();
-    newSupplier.value = { name: "", phone_number: "", email: "", address: "", zip_code: "", country: "", rating: "", notes: "" };
+    newSupplier.value = { name: "", contact_person: "", phone_number: "", email: "", address: "", zip_code: "", country: "", rating: "", notes: "" };
   }
 };
 
@@ -67,17 +68,17 @@ const deleteSupplier = async (id) => {
   else fetchSuppliers();
 };
 
-// Validate numeric input and restrict rating between 0 and 5
-const validateNumberInput = (event, field, min = 0, max = Infinity) => {
-  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
-  newSupplier.value[field] = value !== "" ? String(value) : "";
+// Validate numeric input, allowing phone numbers with leading zero
+const validatePhoneNumberInput = (event, field) => {
+  let value = event.target.value.replace(/[^0-9]/g, ""); // Allow only numbers
+  if (value.length > 11) value = value.slice(0, 11); // Limit to 11 digits
+  newSupplier.value[field] = value;
 };
 
-const validateUpdatedNumberInput = (event, field, min = 0, max = Infinity) => {
-  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
-  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
-  updatedSupplier.value[field] = value !== "" ? String(value) : "";
+const validateUpdatedPhoneNumberInput = (event, field) => {
+  let value = event.target.value.replace(/[^0-9]/g, ""); // Allow only numbers
+  if (value.length > 11) value = value.slice(0, 11); // Limit to 11 digits
+  updatedSupplier.value[field] = value;
 };
 
 onMounted(fetchSuppliers);
@@ -93,6 +94,7 @@ onMounted(fetchSuppliers);
         <tr>
           <th>ID</th>
           <th>Name</th>
+          <th>Contact Person</th>
           <th>Phone Number</th>
           <th>Email</th>
           <th>Address</th>
@@ -112,7 +114,12 @@ onMounted(fetchSuppliers);
           <td v-else>{{ supplier.name }}</td>
 
           <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.phone_number" type="text" @input="validateUpdatedNumberInput($event, 'phone_number')" />
+            <input v-model="updatedSupplier.contact_person" type="text" />
+          </td>
+          <td v-else>{{ supplier.contact_person }}</td>
+
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.phone_number" type="text" @input="validateUpdatedPhoneNumberInput($event, 'phone_number')" />
           </td>
           <td v-else>{{ supplier.phone_number }}</td>
 
@@ -127,7 +134,7 @@ onMounted(fetchSuppliers);
           <td v-else>{{ supplier.address }}</td>
 
           <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.zip_code" type="text" @input="validateUpdatedNumberInput($event, 'zip_code')" />
+            <input v-model="updatedSupplier.zip_code" type="text" />
           </td>
           <td v-else>{{ supplier.zip_code }}</td>
 
@@ -137,7 +144,7 @@ onMounted(fetchSuppliers);
           <td v-else>{{ supplier.country }}</td>
 
           <td v-if="editingSupplier === supplier.id">
-            <input v-model="updatedSupplier.rating" type="text" @input="validateUpdatedNumberInput($event, 'rating', 0, 5)" />
+            <input v-model="updatedSupplier.rating" type="number" min="0" max="5" />
           </td>
           <td v-else>{{ supplier.rating }}</td>
 
@@ -160,17 +167,19 @@ onMounted(fetchSuppliers);
     <h3>Add New Supplier</h3>
     <div class="add-form">
       <input v-model="newSupplier.name" type="text" placeholder="Supplier Name" />
-      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" @input="validateNumberInput($event, 'phone_number')" />
+      <input v-model="newSupplier.contact_person" type="text" placeholder="Contact Person" />
+      <input v-model="newSupplier.phone_number" type="text" placeholder="Phone Number" @input="validatePhoneNumberInput($event, 'phone_number')" />
       <input v-model="newSupplier.email" type="email" placeholder="Email" />
       <input v-model="newSupplier.address" type="text" placeholder="Address" />
-      <input v-model="newSupplier.zip_code" type="text" placeholder="Zip Code" @input="validateNumberInput($event, 'zip_code')" />
+      <input v-model="newSupplier.zip_code" type="text" placeholder="Zip Code" />
       <input v-model="newSupplier.country" type="text" placeholder="Country" />
-      <input v-model="newSupplier.rating" type="text" placeholder="Rating (0-5)" @input="validateNumberInput($event, 'rating', 0, 5)" />
+      <input v-model="newSupplier.rating" type="number" min="0" max="5" placeholder="Rating (0-5)" />
       <input v-model="newSupplier.notes" type="text" placeholder="Notes" />
       <button class="add-btn" @click="addSupplier">Add</button>
     </div>
   </div>
 </template>
+
 
 
 
