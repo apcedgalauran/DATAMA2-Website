@@ -7,11 +7,11 @@ const editingProduct = ref(null);
 const updatedProduct = ref({});
 const newProduct = ref({
   name: "",
-  price: "",
-  stock_quantity: "",
+  price: "1",
+  stock_quantity: "1",
   category: "",
   description: "",
-  reorder_level: "",
+  reorder_level: "1",
   rating: "",
 });
 
@@ -37,20 +37,33 @@ const cancelEditing = () => {
   updatedProduct.value = {};
 };
 
-// Validate input
+// Validate numeric input
+const validateNumberInput = (event, field, min = 1, max = Infinity) => {
+  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
+  newProduct.value[field] = value !== "" ? String(value) : "";
+};
+
+const validateUpdatedNumberInput = (event, field, min = 1, max = Infinity) => {
+  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
+  updatedProduct.value[field] = value !== "" ? String(value) : "";
+};
+
+// Validate input for saving
 const isValidInput = (product) => {
   return (
-    Number.isInteger(product.price) && product.price >= 0 &&
-    Number.isInteger(product.stock_quantity) && product.stock_quantity >= 0 &&
-    Number.isInteger(product.reorder_level) && product.reorder_level >= 0 &&
-    Number.isInteger(product.rating) && product.rating >= 1 && product.rating <= 5
+    Number.isInteger(Number(product.price)) && product.price >= 1 &&
+    Number.isInteger(Number(product.stock_quantity)) && product.stock_quantity >= 1 &&
+    Number.isInteger(Number(product.reorder_level)) && product.reorder_level >= 1 &&
+    Number.isInteger(Number(product.rating)) && product.rating >= 0 && product.rating <= 5
   );
 };
 
 // Save updated data
 const saveUpdate = async () => {
   if (!isValidInput(updatedProduct.value)) {
-    alert("Invalid input. Ensure values are integers and rating is between 1 and 5.");
+    alert("Invalid input. Ensure values are integers and rating is between 0 and 5.");
     return;
   }
 
@@ -67,7 +80,7 @@ const saveUpdate = async () => {
 // Add a new product
 const addProduct = async () => {
   if (!isValidInput(newProduct.value)) {
-    alert("Invalid input. Ensure values are integers and rating is between 1 and 5.");
+    alert("Invalid input. Ensure values are integers and rating is between 0 and 5.");
     return;
   }
 
@@ -75,7 +88,7 @@ const addProduct = async () => {
   if (error) console.error(error);
   else {
     fetchProducts();
-    newProduct.value = { name: "", price: "", stock_quantity: "", category: "", description: "", reorder_level: "", rating: "" };
+    newProduct.value = { name: "", price: "1", stock_quantity: "1", category: "", description: "", reorder_level: "1", rating: "" };
   }
 };
 
@@ -111,7 +124,7 @@ onMounted(fetchProducts);
       <tbody>
         <tr v-for="product in products" :key="product.id">
           <td>{{ product.id }}</td>
-          
+
           <!-- Editable Fields -->
           <td v-if="editingProduct === product.id">
             <input v-model="updatedProduct.name" type="text" />
@@ -119,12 +132,12 @@ onMounted(fetchProducts);
           <td v-else>{{ product.name }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model.number="updatedProduct.price" type="number" min="0" step="1" />
+            <input v-model.number="updatedProduct.price" type="number" min="1" step="1" @input="validateUpdatedNumberInput($event, 'price', 1)" />
           </td>
           <td v-else>${{ product.price }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model.number="updatedProduct.stock_quantity" type="number" min="0" step="1" />
+            <input v-model.number="updatedProduct.stock_quantity" type="number" min="1" step="1" @input="validateUpdatedNumberInput($event, 'stock_quantity', 1)" />
           </td>
           <td v-else>{{ product.stock_quantity }}</td>
 
@@ -139,12 +152,12 @@ onMounted(fetchProducts);
           <td v-else>{{ product.description }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model.number="updatedProduct.reorder_level" type="number" min="0" step="1" />
+            <input v-model.number="updatedProduct.reorder_level" type="number" min="1" step="1" @input="validateUpdatedNumberInput($event, 'reorder_level', 1)" />
           </td>
           <td v-else>{{ product.reorder_level }}</td>
 
           <td v-if="editingProduct === product.id">
-            <input v-model.number="updatedProduct.rating" type="number" min="1" max="5" step="1" />
+            <input v-model.number="updatedProduct.rating" type="number" min="0" max="5" step="1" @input="validateUpdatedNumberInput($event, 'rating', 0, 5)" />
           </td>
           <td v-else>{{ product.rating }}</td>
 
@@ -163,16 +176,19 @@ onMounted(fetchProducts);
     <h3>Add New Product</h3>
     <div class="add-form">
       <input v-model="newProduct.name" type="text" placeholder="Product Name" />
-      <input v-model.number="newProduct.price" type="number" min="0" step="1" placeholder="Price" />
-      <input v-model.number="newProduct.stock_quantity" type="number" min="0" step="1" placeholder="Stock Quantity" />
+      <input v-model.number="newProduct.price" type="number" min="1" step="1" placeholder="Price" @input="validateNumberInput($event, 'price', 1)" />
+      <input v-model.number="newProduct.stock_quantity" type="number" min="1" step="1" placeholder="Stock Quantity" @input="validateNumberInput($event, 'stock_quantity', 1)" />
       <input v-model="newProduct.category" type="text" placeholder="Category" />
       <input v-model="newProduct.description" type="text" placeholder="Description" />
-      <input v-model.number="newProduct.reorder_level" type="number" min="0" step="1" placeholder="Reorder Level" />
-      <input v-model.number="newProduct.rating" type="number" min="1" max="5" step="1" placeholder="Rating (1-5)" />
+      <input v-model.number="newProduct.reorder_level" type="number" min="1" step="1" placeholder="Reorder Level" @input="validateNumberInput($event, 'reorder_level', 1)" />
+      <input v-model.number="newProduct.rating" type="number" min="0" max="5" step="1" placeholder="Rating (0-5)" @input="validateNumberInput($event, 'rating', 0, 5)" />
       <button class="add-btn" @click="addProduct">Add</button>
     </div>
   </div>
 </template>
+
+
+
 
 
 

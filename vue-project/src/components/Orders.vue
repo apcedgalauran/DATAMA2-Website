@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, watch } from "vue";
 import { supabase } from "../lib/supabaseClient";
 
 const orders = ref([]);
@@ -16,6 +16,7 @@ const newOrder = ref({
 
 const validStatuses = ["Pending", "Completed", "Shipped", "Cancelled"];
 const statusError = ref("");
+const totalAmountError = ref("");
 
 // Fetch orders from Supabase
 const fetchOrders = async () => {
@@ -38,7 +39,35 @@ const cancelEditing = () => {
   editingOrder.value = null;
   updatedOrder.value = {};
   statusError.value = "";
+  totalAmountError.value = "";
 };
+
+// Validate total_amount with min = 1
+const validateTotalAmount = (orderObj) => {
+  let value = Number(orderObj.total_amount);
+  if (!Number.isInteger(value) || value < 1) {
+    totalAmountError.value = "Total Amount must be an integer and at least 1.";
+    orderObj.total_amount = Math.max(1, Math.floor(value)); // Ensure at least 1
+  } else {
+    totalAmountError.value = "";
+  }
+};
+
+// Validate positive integer values for customer_id and shipping_id
+const validatePositiveInteger = (orderObj, field) => {
+  let value = Number(orderObj[field]);
+  if (!Number.isInteger(value) || value <= 0) {
+    orderObj[field] = 1; // Automatically correct to the minimum valid value
+  }
+};
+
+// Watchers for input validation
+watch(() => newOrder.value.total_amount, () => validateTotalAmount(newOrder.value));
+watch(() => updatedOrder.value.total_amount, () => validateTotalAmount(updatedOrder.value));
+watch(() => newOrder.value.customer_id, () => validatePositiveInteger(newOrder.value, "customer_id"));
+watch(() => newOrder.value.shipping_id, () => validatePositiveInteger(newOrder.value, "shipping_id"));
+watch(() => updatedOrder.value.customer_id, () => validatePositiveInteger(updatedOrder.value, "customer_id"));
+watch(() => updatedOrder.value.shipping_id, () => validatePositiveInteger(updatedOrder.value, "shipping_id"));
 
 // Save updated data
 const saveUpdate = async () => {
@@ -46,6 +75,9 @@ const saveUpdate = async () => {
     statusError.value = "Invalid status. Must be 'Pending', 'Completed', 'Shipped', or 'Cancelled'.";
     return;
   }
+
+  if (totalAmountError.value) return;
+
   statusError.value = "";
   const { id, ...fields } = updatedOrder.value;
   const { error } = await supabase.from("orders").update(fields).eq("id", id);
@@ -63,6 +95,9 @@ const addOrder = async () => {
     statusError.value = "Invalid status. Must be 'Pending', 'Completed', 'Shipped', or 'Cancelled'.";
     return;
   }
+
+  if (totalAmountError.value) return;
+
   statusError.value = "";
   const newOrderData = {
     date: newOrder.value.date ? new Date(newOrder.value.date).toISOString() : null,
@@ -105,6 +140,7 @@ onMounted(fetchOrders);
     <h2>📑 Order Management</h2>
 
     <p v-if="statusError" class="error">{{ statusError }}</p>
+    <p v-if="totalAmountError" class="error">{{ totalAmountError }}</p>
 
     <!-- Orders Table -->
     <table>
@@ -131,7 +167,7 @@ onMounted(fetchOrders);
           <td v-else>{{ new Date(order.date).toLocaleString() }}</td>
 
           <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.total_amount" type="number" />
+            <input v-model="updatedOrder.total_amount" type="number" min="1" />
           </td>
           <td v-else>${{ order.total_amount }}</td>
 
@@ -148,12 +184,12 @@ onMounted(fetchOrders);
           <td v-else>{{ order.notes || "N/A" }}</td>
 
           <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.customer_id" type="number" />
+            <input v-model="updatedOrder.customer_id" type="number" min="1" />
           </td>
           <td v-else>{{ order.customer_id || "N/A" }}</td>
 
           <td v-if="editingOrder === order.id">
-            <input v-model="updatedOrder.shipping_id" type="number" />
+            <input v-model="updatedOrder.shipping_id" type="number" min="1" />
           </td>
           <td v-else>{{ order.shipping_id || "N/A" }}</td>
 
@@ -172,17 +208,21 @@ onMounted(fetchOrders);
     <h3>Add New Order</h3>
     <div class="add-form">
       <input v-model="newOrder.date" type="datetime-local" />
-      <input v-model="newOrder.total_amount" type="number" placeholder="Total Amount" />
+      <input v-model="newOrder.total_amount" type="number" placeholder="Total Amount" min="1" />
       <select v-model="newOrder.status">
         <option v-for="status in validStatuses" :key="status" :value="status">{{ status }}</option>
       </select>
       <input v-model="newOrder.notes" type="text" placeholder="Notes" />
-      <input v-model="newOrder.customer_id" type="number" placeholder="Customer ID" />
-      <input v-model="newOrder.shipping_id" type="number" placeholder="Shipping ID" />
+      <input v-model="newOrder.customer_id" type="number" placeholder="Customer ID" min="1" />
+      <input v-model="newOrder.shipping_id" type="number" placeholder="Shipping ID" min="1" />
       <button class="add-btn" @click="addOrder">Add</button>
     </div>
   </div>
 </template>
+
+
+
+
 
 <style scoped>
 /* General Styling */

@@ -67,13 +67,17 @@ const deleteSupplier = async (id) => {
   else fetchSuppliers();
 };
 
-// Ensure only numbers are entered
-const validateNumberInput = (event, field) => {
-  newSupplier.value[field] = event.target.value.replace(/\D/g, "");
+// Validate numeric input and restrict rating between 0 and 5
+const validateNumberInput = (event, field, min = 0, max = Infinity) => {
+  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
+  newSupplier.value[field] = value !== "" ? String(value) : "";
 };
 
-const validateUpdatedNumberInput = (event, field) => {
-  updatedSupplier.value[field] = event.target.value.replace(/\D/g, "");
+const validateUpdatedNumberInput = (event, field, min = 0, max = Infinity) => {
+  let value = event.target.value.replace(/\D/g, ""); // Remove non-numeric characters
+  value = value !== "" ? Math.max(min, Math.min(max, parseInt(value, 10))) : "";
+  updatedSupplier.value[field] = value !== "" ? String(value) : "";
 };
 
 onMounted(fetchSuppliers);
@@ -102,7 +106,9 @@ onMounted(fetchSuppliers);
       <tbody>
         <tr v-for="supplier in suppliers" :key="supplier.id">
           <td>{{ supplier.id }}</td>
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.name" type="text" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.name" type="text" />
+          </td>
           <td v-else>{{ supplier.name }}</td>
 
           <td v-if="editingSupplier === supplier.id">
@@ -110,10 +116,14 @@ onMounted(fetchSuppliers);
           </td>
           <td v-else>{{ supplier.phone_number }}</td>
 
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.email" type="email" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.email" type="email" />
+          </td>
           <td v-else>{{ supplier.email || "N/A" }}</td>
 
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.address" type="text" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.address" type="text" />
+          </td>
           <td v-else>{{ supplier.address }}</td>
 
           <td v-if="editingSupplier === supplier.id">
@@ -121,13 +131,19 @@ onMounted(fetchSuppliers);
           </td>
           <td v-else>{{ supplier.zip_code }}</td>
 
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.country" type="text" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.country" type="text" />
+          </td>
           <td v-else>{{ supplier.country }}</td>
 
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.rating" type="number" step="0.1" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.rating" type="text" @input="validateUpdatedNumberInput($event, 'rating', 0, 5)" />
+          </td>
           <td v-else>{{ supplier.rating }}</td>
 
-          <td v-if="editingSupplier === supplier.id"><input v-model="updatedSupplier.notes" type="text" /></td>
+          <td v-if="editingSupplier === supplier.id">
+            <input v-model="updatedSupplier.notes" type="text" />
+          </td>
           <td v-else>{{ supplier.notes }}</td>
 
           <td>
@@ -149,12 +165,15 @@ onMounted(fetchSuppliers);
       <input v-model="newSupplier.address" type="text" placeholder="Address" />
       <input v-model="newSupplier.zip_code" type="text" placeholder="Zip Code" @input="validateNumberInput($event, 'zip_code')" />
       <input v-model="newSupplier.country" type="text" placeholder="Country" />
-      <input v-model="newSupplier.rating" type="number" step="0.1" placeholder="Rating" />
+      <input v-model="newSupplier.rating" type="text" placeholder="Rating (0-5)" @input="validateNumberInput($event, 'rating', 0, 5)" />
       <input v-model="newSupplier.notes" type="text" placeholder="Notes" />
       <button class="add-btn" @click="addSupplier">Add</button>
     </div>
   </div>
 </template>
+
+
+
 
 
 <style scoped>

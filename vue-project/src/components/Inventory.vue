@@ -27,6 +27,13 @@ const fetchInventory = async () => {
   }
 };
 
+// Validate positive integer input
+const validatePositiveInt = (obj, key) => {
+  if (!Number.isInteger(obj[key]) || obj[key] <= 0) {
+    obj[key] = obj[key] ? Math.max(1, Math.floor(obj[key])) : "";
+  }
+};
+
 // Enable editing mode
 const startEditing = (item) => {
   editingItem.value = item.id;
@@ -85,11 +92,10 @@ const deleteItem = async (id) => {
 onMounted(fetchInventory);
 </script>
 
-
 <template>
   <div class="container">
     <h2>📦 Inventory Management</h2>
-    
+
     <!-- Inventory Table -->
     <table>
       <thead>
@@ -110,12 +116,12 @@ onMounted(fetchInventory);
 
           <!-- Editable Fields -->
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.reorder_level" type="number" />
+            <input v-model.number="updatedItem.reorder_level" type="number" @input="validatePositiveInt(updatedItem, 'reorder_level')" />
           </td>
           <td v-else>{{ item.reorder_level }}</td>
 
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.stock_quantity" type="number" />
+            <input v-model.number="updatedItem.stock_quantity" type="number" @input="validatePositiveInt(updatedItem, 'stock_quantity')" />
           </td>
           <td v-else>{{ item.stock_quantity }}</td>
 
@@ -125,7 +131,7 @@ onMounted(fetchInventory);
           <td v-else>{{ new Date(item.restock_date).toLocaleString() }}</td>
 
           <td v-if="editingItem === item.id">
-            <input v-model="updatedItem.restock_quantity" type="number" />
+            <input v-model.number="updatedItem.restock_quantity" type="number" @input="validatePositiveInt(updatedItem, 'restock_quantity')" />
           </td>
           <td v-else>{{ item.restock_quantity }}</td>
 
@@ -150,10 +156,10 @@ onMounted(fetchInventory);
     <!-- Add New Inventory -->
     <h3>Add New Inventory</h3>
     <div class="add-form">
-      <input v-model="newItem.reorder_level" type="number" placeholder="Reorder Level" />
-      <input v-model="newItem.stock_quantity" type="number" placeholder="Stock Quantity" />
+      <input v-model.number="newItem.reorder_level" type="number" @input="validatePositiveInt(newItem, 'reorder_level')" placeholder="Reorder Level" />
+      <input v-model.number="newItem.stock_quantity" type="number" @input="validatePositiveInt(newItem, 'stock_quantity')" placeholder="Stock Quantity" />
       <input v-model="newItem.restock_date" type="datetime-local" />
-      <input v-model="newItem.restock_quantity" type="number" placeholder="Restock Quantity" />
+      <input v-model.number="newItem.restock_quantity" type="number" @input="validatePositiveInt(newItem, 'restock_quantity')" placeholder="Restock Quantity" />
       <input v-model="newItem.location" type="text" placeholder="Location" />
       <button class="add-btn" @click="addItem">Add</button>
     </div>
